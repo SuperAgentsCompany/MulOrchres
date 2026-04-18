@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # For the prototype, we default to a local SQLite database if not specified
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./supaa.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:////tmp/supaa.db")
 
 # For asyncpg, we need to ensure the URL starts with postgresql+asyncpg
 if DATABASE_URL.startswith("postgresql://"):

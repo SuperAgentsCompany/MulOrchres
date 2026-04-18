@@ -1,9 +1,11 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Text, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, DateTime, func, ForeignKey, Text, Enum as SQLEnum, JSON
 from sqlalchemy.orm import relationship
 from .database import Base
 import enum
+
+# Use JSON instead of JSONB for SQLite compatibility
+JSON_TYPE = JSON
 
 # Define UUID as a fallback for SQLite
 from sqlalchemy.types import TypeDecorator, CHAR
@@ -85,7 +87,7 @@ class Task(Base):
     title = Column(String, nullable=False)
     description = Column(Text)
     status = Column(SQLEnum(TaskStatus), default=TaskStatus.PENDING)
-    result = Column(JSONB)
+    result = Column(JSON_TYPE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     project = relationship("Project", back_populates="tasks")
@@ -97,8 +99,8 @@ class KnowledgeBase(Base):
     project_id = Column(GUID(), ForeignKey("projects.id"))
     filename = Column(String, nullable=False)
     content = Column(Text)
-    embedding = Column(JSONB) # Fallback to JSON for embeddings in prototype
-    metadata_json = Column(JSONB)
+    embedding = Column(JSON_TYPE) # Fallback to JSON for embeddings in prototype
+    metadata_json = Column(JSON_TYPE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     project = relationship("Project")
