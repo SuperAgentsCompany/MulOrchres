@@ -1,46 +1,23 @@
-# SUPAA System Architecture
+# SUPAA Backend System Architecture
 
 ## Overview
-SUPAA is an agentic platform powered by specialized, fine-tuned AI models. Our current focus is the **English-Japanese AI Tutor**, a demonstration of pedagogical excellence through model specialization.
+This repository contains the backend orchestration layer and API Gateway for the SUPAA multi-agent platform, focusing heavily on our MVP: the English-Japanese AI Tutor.
 
 ## Core Components
-1.  **Gemma4-4b Base Model:** Our foundational LLM, chosen for its high performance at a small scale (4B parameters), native tool-use, and reasoning capabilities.
-2.  **Specialized Adapters (LoRA):** We apply Low-Rank Adaptation to specialize the base model for specific domains (e.g., EN-JP Teaching).
-3.  **Orchestration Layer (Paperclip):** Manages multiple agents (CTO, Lead ML Engineer, UX Designer, etc.) to execute complex workflows.
-4.  **Web MVP:** A React-based interface for user interaction, showcasing real-time reasoning and pedagogical feedback.
-
-## Web Application Architecture (MVP)
-
-The SUPAA MVP uses a decoupled architecture to ensure scalability and high performance for real-time agentic interactions.
-
-### 1. Backend (Express/Node.js)
-- **Role:** Orchestration layer and API gateway.
-- **Key Features:**
-    - Real-time streaming of model responses and "Internal Monologue" (Reasoning).
-    - Session management for persistent tutor interactions.
-    - Integration with the Gemma4 API for model inference.
-- **Stack:** Node.js, Express.
-
-### 2. Frontend (React)
-- **Role:** Interactive user interface for language learning.
-- **Key Features:**
-    - Dynamic chat interface with pedagogical reasoning sidebars.
-    - Interactive grammar highlighting and real-time feedback toasts.
-    - Adherence to the **Nova Design System** for foundations (colors, typography).
-- **Stack:** React (TypeScript), Vite, Vanilla CSS.
-
-### 3. Communication
-- **Protocol:** HTTP Streaming / WebSockets for low-latency updates of the reasoning map and chat bubbles.
-
+1. **FastAPI Backend (`api/`)**: The core application server built with Python and FastAPI. It orchestrates agent interactions, handles database models (via SQLAlchemy), and serves public and internal endpoints.
+2. **PostgreSQL + pgvector**: Primary relational database handling user states, chats, and vector embeddings for semantic retrieval.
+3. **Redis**: Manages sessions, ephemeral task states, and WebSocket connection state tracking.
+4. **Cloud Run**: The serverless execution environment handling backend autoscaling and deployment.
 
 ## Data Flow
-1.  **User Input:** Captured via the Web MVP.
-2.  **Inference:** Handled by a fine-tuned Gemma4 model served via vLLM on GCP.
-3.  **Reasoning Extraction:** The model's internal monologue is captured via `<thought>` tags or the `reasoning` field and streamed to the UI.
-4.  **Tool Execution:** When needed, the model calls tools (e.g., dictionary lookups, grammar validation) which are executed by the Paperclip adapter.
+1. **Client Request**: The frontend or an agent makes a REST/WebSocket call to the FastAPI Gateway.
+2. **State Management**: The API validates the session via Redis and retrieves the context from PostgreSQL.
+3. **Model Inference**: If an LLM response is needed, the backend communicates with the `gemma4-4b` or `gemma4-coding` service via HTTP streams.
+4. **Tool Execution (Paperclip)**: Specialized agents execute tasks through the Paperclip adapter layer, and the backend captures these state changes, streaming the "Internal Monologue" back to the user via WebSocket.
 
-## Model Specialization Pipeline
-1.  **Data Generation:** High-quality synthetic pedagogical data generated via Gemini 2.5 Pro.
-2.  **Fine-tuning:** PEFT/LoRA training using Unsloth on GCP L4 GPUs.
-3.  **Evaluation:** Benchmarking against the base model for domain-specific accuracy and nuance.
-4.  **Deployment:** Serving the fine-tuned adapter via vLLM.
+## Inter-Service Communication
+The backend communicates directly with specialized model deployments (vLLM on Cloud Run) and handles rate limiting, authentication, and structured output parsing.
+
+## Design Patterns
+- **Dependency Injection**: Extensively used across FastAPI routers to manage database sessions and service layers.
+- **Asynchronous I/O**: `asyncio` and asynchronous database drivers (`asyncpg`) are mandatory for all I/O bound operations to ensure high throughput.

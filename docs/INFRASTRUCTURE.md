@@ -1,29 +1,28 @@
-# SUPAA Infrastructure
+# SUPAA Infrastructure (Backend)
 
 ## Cloud Environment: Google Cloud Platform (GCP)
 Project ID: `super-power-agents`
 
 ## Compute Resources
 1.  **Serving (Cloud Run):**
-    - Service: `gemma4-4b`
+    - Services: `supaa-api`, `tutor-backend`
     - Region: `us-central1`
-    - Hardware: 1x NVIDIA RTX Pro 6000 GPU.
-    - Software: vLLM serving stack with OpenAI-compatible API.
-2.  **Fine-tuning (Compute Engine):**
-    - VM: `hermes-finetune-gemma`
-    - Region: `asia-southeast1-b`
-    - Hardware: 1x NVIDIA L4 GPU.
-    - Software: PyTorch, Unsloth, HuggingFace Transformers.
-3.  **Development VM:**
-    - VM: `gemma-tuning-vm`
-    - Region: `us-central1-a`
-    - Hardware: 1x NVIDIA Tesla T4 GPU.
+    - Software: Docker, Python, FastAPI, Gunicorn/Uvicorn.
+    - Configuration: Autoscalable stateless containers deployed from `us-docker.pkg.dev`.
 
-## Storage
+## Storage & Databases
+- **Relational Database:** Cloud SQL for PostgreSQL.
+  - Features: Multi-AZ for high availability, `pgvector` enabled for semantic search.
+- **In-Memory Store:** Memorystore for Redis.
+  - Role: Session caching, task orchestration queues, high-speed rate limiting.
 - **Model Cache (GCS):** `gs://super-power-agents-model-cache/`
-- **Dataset Storage:** Local `.jsonl` files in the Paperclip workspace, backed up to GCS.
 
 ## Networking
 - **VPC:** `gemma-vpc`
 - **Subnet:** `gemma-subnet`
-- Cloud Run is publicly accessible via the authenticated endpoint, restricted to Paperclip agents and the Web MVP.
+- **Egress & Ingress:** Serverless VPC Access connector to secure backend communication with Cloud SQL and Memorystore.
+- API is publicly accessible via the authenticated Cloud Run endpoint.
+
+## Provisioning
+- Managed via Terraform located at `infra/terraform/`.
+- CI/CD handles automated deployment of `docker-compose` tested images to GCP Artifact Registry, followed by Cloud Run revision updates.

@@ -8,19 +8,20 @@ This document defines the data strategy for developing and improving the SUPAA p
 ### 2.1. Collection (Data Flywheel)
 We will capture high-quality interaction trajectories from the SUPAA platform.
 - **Source:** Real agent interactions (CEO, CMO, UX, CTO) and human-in-the-loop (HITL) feedback.
-- **Format:** JSONL trajectories containing messages, tool calls, tool outputs, and reasoning steps.
+- **Format:** JSONL trajectories containing messages, tool calls, tool outputs, and reasoning steps (e.g., `coding_data.jsonl`, `dpo_data.jsonl`).
 - **Metadata:** Success/failure labels, user ratings, and execution metrics (latency, cost).
 
 ### 2.2. Synthetic Data Generation
 To bootstrap performance in specific ASE tasks, we will use a "Teacher-Student" distillation approach.
 - **Teacher Models:** GPT-4o, Claude 3.5 Sonnet.
 - **Goal:** Generate complex multi-agent coordination scenarios that are rare in initial production data.
+- **Implementation Script:** `generate_coding_data.py` generates SFT examples.
 - **Filtering:** Automated validation (e.g., code linting, test execution) to ensure synthetic data quality.
 
 ### 2.3. Processing & Labeling
 - **Normalization:** Standardizing various tool-call formats into the Gemma4 native format.
 - **Reasoning Extraction:** Using larger models to retroactively "reason" over successful trajectories to create COT (Chain of Thought) training pairs.
-- **DPO Pairing:** Creating preference pairs (win/loss) based on HITL feedback and automated metrics.
+- **DPO Pairing:** Creating preference pairs (win/loss) based on HITL feedback and automated metrics using `generate_dpo_pairs.py`.
 
 ## 3. Use-Case Examples for Custom Model
 
@@ -46,9 +47,9 @@ To bootstrap performance in specific ASE tasks, we will use a "Teacher-Student" 
   - `Output`: Identification of the lock contention and a proposed retry strategy.
 
 ## 4. Technical Architecture
-- **Storage:** GCP BigQuery for structured telemetry; GCS for raw JSONL trajectories.
-- **Training Pipeline:** Vertex AI Pipelines for automated fine-tuning runs on `hermes-finetune-gemma`.
-- **Evaluation:** A dedicated "Shadow Mode" where new models run in parallel with production models to compare outputs without affecting users.
+- **Storage:** GCP BigQuery for structured telemetry; GCS for raw JSONL trajectories (`gs://super-power-agents-model-cache/models/`).
+- **Training Pipeline:** Automated fine-tuning runs on `hermes-finetune-gemma` using `finetune_coding.py` for SFT and `dpo_finetune_coding.py` for DPO alignment.
+- **Evaluation:** A dedicated "Shadow Mode" where new models run in parallel with production models. Benchmark metrics are computed using `run_benchmark.py` and `llm_judge.py`.
 
 ## 5. Privacy & Security
 - **Anonymization:** Mandatory PII (Personally Identifiable Information) stripping from all training data.
